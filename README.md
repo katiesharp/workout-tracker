@@ -13,7 +13,9 @@ Tap any exercise name to expand its description and progression tips.
 
 ## Usage
 
-Open `index.html` in any browser — no build step, no dependencies.
+Live at **https://katiesharp.github.io/workout-tracker/** — or open `index.html` in any browser. No build step, no dependencies.
+
+**On your phone:** open the link above, then use *Share → Add to Home Screen* (iPhone) or *menu → Add to Home screen* (Android). It installs like an app with its own icon and launches full-screen.
 
 Notes:
 - Check-off state is stored per date, so each day starts fresh automatically.
