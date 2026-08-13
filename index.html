@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hiking Strength Tracker</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --card: #ffffff;
+    --text: #2d2a26;
+    --muted: #7a746c;
+    --accent: #3e6b48;
+    --accent-light: #e4eee6;
+    --border: #e2ddd4;
+    --done: #9fbfa8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 1rem 1rem 4rem;
+  }
+  header { text-align: center; padding: 1.25rem 0 1rem; }
+  header h1 { font-size: 1.4rem; letter-spacing: 0.02em; }
+  header .date { color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem; }
+
+  .day-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .day-tabs button {
+    flex: 1;
+    padding: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .day-tabs button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .progress {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+  .progress .bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    margin-top: 0.4rem;
+    overflow: hidden;
+  }
+  .progress .fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.25s ease;
+  }
+
+  .exercise {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 0.6rem;
+    overflow: hidden;
+  }
+  .exercise.done { background: var(--accent-light); border-color: var(--done); }
+  .exercise-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 0.9rem;
+  }
+  .exercise-row input[type="checkbox"] {
+    width: 1.5rem;
+    height: 1.5rem;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .exercise-info { flex: 1; cursor: pointer; }
+  .exercise-name { font-weight: 600; font-size: 0.95rem; }
+  .exercise.done .exercise-name { text-decoration: line-through; color: var(--muted); }
+  .exercise-scheme { font-size: 0.82rem; color: var(--muted); margin-top: 0.15rem; }
+  .chevron { color: var(--muted); font-size: 0.8rem; transition: transform 0.2s; flex-shrink: 0; }
+  .exercise.open .chevron { transform: rotate(90deg); }
+  .exercise-desc {
+    display: none;
+    padding: 0 0.9rem 0.9rem 3.15rem;
+    font-size: 0.87rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .exercise.open .exercise-desc { display: block; }
+
+  .complete-banner {
+    display: none;
+    text-align: center;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 12px;
+    padding: 0.9rem;
+    margin: 1rem 0;
+    font-weight: 600;
+  }
+  .complete-banner.show { display: block; }
+
+  h2.history-title {
+    font-size: 1rem;
+    margin: 2rem 0 0.75rem;
+    color: var(--text);
+  }
+  .history-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.88rem;
+  }
+  .history-entry .h-date { font-weight: 600; }
+  .history-entry .h-day { color: var(--muted); }
+  .badge {
+    font-size: 0.78rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: var(--border);
+    color: var(--muted);
+  }
+  .badge.full { background: var(--accent); color: #fff; }
+  .empty-history { color: var(--muted); font-size: 0.88rem; text-align: center; padding: 1rem 0; }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 2.5rem;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🥾 Hiking Strength Tracker</h1>
+  <div class="date" id="today-date"></div>
+</header>
+
+<div class="day-tabs">
+  <button id="tab-A" onclick="selectDay('A')">Day 1 — Climbing</button>
+  <button id="tab-B" onclick="selectDay('B')">Day 2 — Endurance</button>
+</div>
+
+<div class="progress">
+  <span id="progress-text"></span>
+  <div class="bar"><div class="fill" id="progress-fill"></div></div>
+</div>
+
+<div id="exercise-list"></div>
+
+<div class="complete-banner" id="complete-banner">Workout complete! Nice work. 🎉</div>
+
+<h2 class="history-title">History</h2>
+<div id="history"></div>
+
+<footer>
+  Each workout is designed to take about 50–60 minutes, twice a week.<br>
+  Start with a weight where you finish each set feeling like you could do 2–3 more good reps.<br>
+  The goal is to become a better hiker, not to win the soreness Olympics. 😄
+</footer>
+
+<script>
+const WORKOUTS = {
+  A: {
+    label: "Day 1 — Strength + Climbing",
+    exercises: [
+      { name: "Leg Press", scheme: "3 × 10–12 · ~8 min",
+        desc: "Sit in the leg press and push the platform away using both legs. Lower it under control until your knees are comfortably bent, then press back up. Don't lock your knees at the top." },
+      { name: "Dumbbell Step-Ups", scheme: "3 × 10–12 each leg · ~8 min",
+        desc: "Stand in front of a low-to-moderate step while holding dumbbells. Place one foot on the step and push through that leg to bring your body up. Step back down and repeat. Try not to use your trailing leg to push yourself up. Progress: bodyweight → 5-lb dumbbells → 10 → 15 → etc." },
+      { name: "Single-Leg Elevated Hip Thrust + Band", scheme: "3 × 10–15 each leg · ~8 min",
+        desc: "Place your working foot on a low block with the band around your thighs. Keep your upper back supported on the floor/bench. Drive through your working foot and squeeze your glute to raise your hips. Lower slowly. Progress: stronger band → more reps → harder variation." },
+      { name: "Step-Downs", scheme: "2 × 10–12 each leg · ~6 min",
+        desc: "Stand on a low step on one leg. Slowly bend that leg and lower your opposite foot toward the floor until it lightly touches down, then push through the elevated leg to return to standing. Keep the movement controlled rather than dropping quickly. Progress: higher step → slower lowering → light dumbbells." },
+      { name: "Hip Abduction Machine", scheme: "2 × 15–20 · ~4 min",
+        desc: "Sit in the machine with your legs together and push your knees outward against the pads. Return slowly rather than letting the weight pull your legs together." },
+      { name: "Incline Treadmill", scheme: "15 minutes",
+        desc: "Walk at approximately 3 mph: 3% → 6% → 9% → 12% → 9% → 6% → 3%. You don't have to spend equal time at every incline. If you're short on time, 10 minutes is still worthwhile; if you're feeling good, go to 20. Progress speed over time: 3.0 → 3.1 → 3.2 → 3.3 mph." },
+    ],
+  },
+  B: {
+    label: "Day 2 — Strength + Endurance",
+    exercises: [
+      { name: "Leg Press", scheme: "3 × 12–15 · ~8 min",
+        desc: "Same movement as Day 1, but use a slightly lighter weight so you can comfortably reach the higher rep range." },
+      { name: "Step-Downs", scheme: "3 × 12–15 each leg · ~8 min",
+        desc: "Same controlled step-down as Day 1. Since this is particularly relevant to hiking, it gets a little more volume on this day." },
+      { name: "Dumbbell Step-Ups", scheme: "3 × 12–15 each leg · ~8 min",
+        desc: "Same movement as Day 1. Use a weight that allows you to maintain control throughout every repetition." },
+      { name: "Single-Leg Elevated Hip Thrust + Band", scheme: "3 × 10–15 each leg · ~8 min",
+        desc: "Same movement as Day 1. Focus on squeezing the glute rather than arching your lower back to get higher." },
+      { name: "Seated Leg Curl", scheme: "2 × 12–15 · ~5 min",
+        desc: "Sit in the leg curl machine and pull the padded lever downward/back using your hamstrings. Return slowly to the starting position." },
+      { name: "Incline Treadmill", scheme: "15 minutes",
+        desc: "Can be somewhat easier than your harder treadmill workout — aim to accumulate time walking uphill rather than maxing out your heart rate. 10 minutes still counts on a long day; 20 if you're feeling good." },
+    ],
+  },
+};
+
+const STORAGE_KEY = "workout-log-v1";
+
+function todayKey() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+function loadLog() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function saveLog(log) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(log));
+}
+
+let log = loadLog();
+let currentDay = (log[todayKey()] && log[todayKey()].day) || "A";
+const openDescs = new Set();
+
+function selectDay(day) {
+  const entry = log[todayKey()];
+  if (entry && entry.day !== day && Object.values(entry.checked).some(Boolean)) {
+    if (!confirm("You already checked off exercises for " + WORKOUTS[entry.day].label + " today. Switch days and clear today's checks?")) return;
+    delete log[todayKey()];
+    saveLog(log);
+  }
+  currentDay = day;
+  render();
+}
+
+function toggleCheck(index) {
+  const key = todayKey();
+  if (!log[key] || log[key].day !== currentDay) {
+    log[key] = { day: currentDay, checked: {} };
+  }
+  log[key].checked[index] = !log[key].checked[index];
+  saveLog(log);
+  render();
+}
+
+function toggleDesc(index) {
+  if (openDescs.has(index)) openDescs.delete(index); else openDescs.add(index);
+  render();
+}
+
+function render() {
+  const key = todayKey();
+  const workout = WORKOUTS[currentDay];
+  const checked = (log[key] && log[key].day === currentDay) ? log[key].checked : {};
+
+  document.getElementById("today-date").textContent =
+    new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+
+  document.getElementById("tab-A").classList.toggle("active", currentDay === "A");
+  document.getElementById("tab-B").classList.toggle("active", currentDay === "B");
+
+  const doneCount = workout.exercises.filter((_, i) => checked[i]).length;
+  const total = workout.exercises.length;
+  document.getElementById("progress-text").textContent = doneCount + " of " + total + " done";
+  document.getElementById("progress-fill").style.width = (doneCount / total * 100) + "%";
+  document.getElementById("complete-banner").classList.toggle("show", doneCount === total);
+
+  const list = document.getElementById("exercise-list");
+  list.innerHTML = "";
+  workout.exercises.forEach((ex, i) => {
+    const div = document.createElement("div");
+    div.className = "exercise" + (checked[i] ? " done" : "") + (openDescs.has(i) ? " open" : "");
+    div.innerHTML =
+      '<div class="exercise-row">' +
+        '<input type="checkbox" ' + (checked[i] ? "checked" : "") + ' onchange="toggleCheck(' + i + ')">' +
+        '<div class="exercise-info" onclick="toggleDesc(' + i + ')">' +
+          '<div class="exercise-name">' + (i + 1) + ". " + ex.name + "</div>" +
+          '<div class="exercise-scheme">' + ex.scheme + "</div>" +
+        "</div>" +
+        '<span class="chevron" onclick="toggleDesc(' + i + ')">▶</span>' +
+      "</div>" +
+      '<div class="exercise-desc">' + ex.desc + "</div>";
+    list.appendChild(div);
+  });
+
+  renderHistory();
+}
+
+function renderHistory() {
+  const container = document.getElementById("history");
+  container.innerHTML = "";
+  const dates = Object.keys(log).sort().reverse();
+  const past = dates.filter(d => Object.values(log[d].checked).some(Boolean));
+  if (past.length === 0) {
+    container.innerHTML = '<div class="empty-history">No workouts logged yet. Check off your first exercise above!</div>';
+    return;
+  }
+  past.forEach(d => {
+    const entry = log[d];
+    const total = WORKOUTS[entry.day].exercises.length;
+    const done = Object.values(entry.checked).filter(Boolean).length;
+    const div = document.createElement("div");
+    div.className = "history-entry";
+    const dateLabel = new Date(d + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    div.innerHTML =
+      '<span class="h-date">' + dateLabel + "</span>" +
+      '<span class="h-day">' + WORKOUTS[entry.day].label + "</span>" +
+      '<span class="badge' + (done === total ? " full" : "") + '">' + done + "/" + total + "</span>";
+    container.appendChild(div);
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>
