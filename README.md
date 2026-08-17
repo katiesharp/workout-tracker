@@ -26,7 +26,7 @@ Each person's page is a self-contained `index.html` in their folder. Edit the `W
 
 To add a new person: copy an existing folder (e.g. `elyse/`), update the name in the page title/header/manifest, change `STORAGE_KEY` to something unique (e.g. `workout-log-sam-v1`), and add a link on the root `index.html`.
 
-## On your phone
+## On your iPhone
 
 Open your page (not the landing page), then use *Share → Add to Home Screen* (iPhone) or *menu → Add to Home screen* (Android). It installs like an app with its own icon and launches full-screen straight to your tracker.
 
