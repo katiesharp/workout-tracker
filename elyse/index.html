@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elyse's Workout Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Elyse">
+<meta name="theme-color" content="#3e6b48">
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --card: #ffffff;
+    --text: #2d2a26;
+    --muted: #7a746c;
+    --accent: #3e6b48;
+    --accent-light: #e4eee6;
+    --border: #e2ddd4;
+    --done: #9fbfa8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 1rem 1rem 4rem;
+  }
+  header { text-align: center; padding: 1.25rem 0 1rem; }
+  header h1 { font-size: 1.4rem; letter-spacing: 0.02em; }
+  header .date { color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem; }
+
+  .day-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .day-tabs button {
+    flex: 1;
+    padding: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .day-tabs button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .progress {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+  .progress .bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    margin-top: 0.4rem;
+    overflow: hidden;
+  }
+  .progress .fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.25s ease;
+  }
+
+  .exercise {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 0.6rem;
+    overflow: hidden;
+  }
+  .exercise.done { background: var(--accent-light); border-color: var(--done); }
+  .exercise-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 0.9rem;
+  }
+  .exercise-row input[type="checkbox"] {
+    width: 1.5rem;
+    height: 1.5rem;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .exercise-info { flex: 1; cursor: pointer; }
+  .exercise-name { font-weight: 600; font-size: 0.95rem; }
+  .exercise.done .exercise-name { text-decoration: line-through; color: var(--muted); }
+  .exercise-scheme { font-size: 0.82rem; color: var(--muted); margin-top: 0.15rem; }
+  .chevron { color: var(--muted); font-size: 0.8rem; transition: transform 0.2s; flex-shrink: 0; }
+  .exercise.open .chevron { transform: rotate(90deg); }
+  .exercise-desc {
+    display: none;
+    padding: 0 0.9rem 0.9rem 3.15rem;
+    font-size: 0.87rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .exercise.open .exercise-desc { display: block; }
+
+  .complete-banner {
+    display: none;
+    text-align: center;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 12px;
+    padding: 0.9rem;
+    margin: 1rem 0;
+    font-weight: 600;
+  }
+  .complete-banner.show { display: block; }
+
+  h2.history-title {
+    font-size: 1rem;
+    margin: 2rem 0 0.75rem;
+    color: var(--text);
+  }
+  .history-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.88rem;
+  }
+  .history-entry .h-date { font-weight: 600; }
+  .history-entry .h-day { color: var(--muted); }
+  .badge {
+    font-size: 0.78rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: var(--border);
+    color: var(--muted);
+  }
+  .badge.full { background: var(--accent); color: #fff; }
+  .empty-history { color: var(--muted); font-size: 0.88rem; text-align: center; padding: 1rem 0; }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 2.5rem;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💪 Elyse's Workout Tracker</h1>
+  <div class="date" id="today-date"></div>
+</header>
+
+<div class="day-tabs">
+  <button id="tab-A" onclick="selectDay('A')">Day 1</button>
+  <button id="tab-B" onclick="selectDay('B')">Day 2</button>
+</div>
+
+<div class="progress">
+  <span id="progress-text"></span>
+  <div class="bar"><div class="fill" id="progress-fill"></div></div>
+</div>
+
+<div id="exercise-list"></div>
+
+<div class="complete-banner" id="complete-banner">Workout complete! Nice work. 🎉</div>
+
+<h2 class="history-title">History</h2>
+<div id="history"></div>
+
+<footer>
+  Your personalized program is on its way!<br>
+  Check off exercises as you go — progress is saved automatically in your browser.
+</footer>
+
+<script>
+const WORKOUTS = {
+  A: {
+    label: "Day 1 — Program Coming Soon",
+    exercises: [
+      { name: "Program coming soon!", scheme: "Placeholder",
+        desc: "Elyse's Day 1 program hasn't been added yet. Once it is, exercises will appear here with sets, reps, and instructions — tap any exercise to expand its description." },
+    ],
+  },
+  B: {
+    label: "Day 2 — Program Coming Soon",
+    exercises: [
+      { name: "Program coming soon!", scheme: "Placeholder",
+        desc: "Elyse's Day 2 program hasn't been added yet. Once it is, exercises will appear here with sets, reps, and instructions — tap any exercise to expand its description." },
+    ],
+  },
+};
+
+const STORAGE_KEY = "workout-log-elyse-v1";
+
+function todayKey() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+function loadLog() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function saveLog(log) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(log));
+}
+
+let log = loadLog();
+let currentDay = (log[todayKey()] && log[todayKey()].day) || "A";
+const openDescs = new Set();
+
+function selectDay(day) {
+  const entry = log[todayKey()];
+  if (entry && entry.day !== day && Object.values(entry.checked).some(Boolean)) {
+    if (!confirm("You already checked off exercises for " + WORKOUTS[entry.day].label + " today. Switch days and clear today's checks?")) return;
+    delete log[todayKey()];
+    saveLog(log);
+  }
+  currentDay = day;
+  render();
+}
+
+function toggleCheck(index) {
+  const key = todayKey();
+  if (!log[key] || log[key].day !== currentDay) {
+    log[key] = { day: currentDay, checked: {} };
+  }
+  log[key].checked[index] = !log[key].checked[index];
+  saveLog(log);
+  render();
+}
+
+function toggleDesc(index) {
+  if (openDescs.has(index)) openDescs.delete(index); else openDescs.add(index);
+  render();
+}
+
+function render() {
+  const key = todayKey();
+  const workout = WORKOUTS[currentDay];
+  const checked = (log[key] && log[key].day === currentDay) ? log[key].checked : {};
+
+  document.getElementById("today-date").textContent =
+    new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+
+  document.getElementById("tab-A").classList.toggle("active", currentDay === "A");
+  document.getElementById("tab-B").classList.toggle("active", currentDay === "B");
+
+  const doneCount = workout.exercises.filter((_, i) => checked[i]).length;
+  const total = workout.exercises.length;
+  document.getElementById("progress-text").textContent = doneCount + " of " + total + " done";
+  document.getElementById("progress-fill").style.width = (doneCount / total * 100) + "%";
+  document.getElementById("complete-banner").classList.toggle("show", doneCount === total);
+
+  const list = document.getElementById("exercise-list");
+  list.innerHTML = "";
+  workout.exercises.forEach((ex, i) => {
+    const div = document.createElement("div");
+    div.className = "exercise" + (checked[i] ? " done" : "") + (openDescs.has(i) ? " open" : "");
+    div.innerHTML =
+      '<div class="exercise-row">' +
+        '<input type="checkbox" ' + (checked[i] ? "checked" : "") + ' onchange="toggleCheck(' + i + ')">' +
+        '<div class="exercise-info" onclick="toggleDesc(' + i + ')">' +
+          '<div class="exercise-name">' + (i + 1) + ". " + ex.name + "</div>" +
+          '<div class="exercise-scheme">' + ex.scheme + "</div>" +
+        "</div>" +
+        '<span class="chevron" onclick="toggleDesc(' + i + ')">▶</span>' +
+      "</div>" +
+      '<div class="exercise-desc">' + ex.desc + "</div>";
+    list.appendChild(div);
+  });
+
+  renderHistory();
+}
+
+function renderHistory() {
+  const container = document.getElementById("history");
+  container.innerHTML = "";
+  const dates = Object.keys(log).sort().reverse();
+  const past = dates.filter(d => Object.values(log[d].checked).some(Boolean));
+  if (past.length === 0) {
+    container.innerHTML = '<div class="empty-history">No workouts logged yet. Check off your first exercise above!</div>';
+    return;
+  }
+  past.forEach(d => {
+    const entry = log[d];
+    const total = WORKOUTS[entry.day].exercises.length;
+    const done = Object.values(entry.checked).filter(Boolean).length;
+    const div = document.createElement("div");
+    div.className = "history-entry";
+    const dateLabel = new Date(d + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    div.innerHTML =
+      '<span class="h-date">' + dateLabel + "</span>" +
+      '<span class="h-day">' + WORKOUTS[entry.day].label + "</span>" +
+      '<span class="badge' + (done === total ? " full" : "") + '">' + done + "/" + total + "</span>";
+    container.appendChild(div);
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>

@@ -1,8 +1,17 @@
-# Hiking Strength Tracker 🥾
+# Workout Trackers 🏋️
 
-A simple, single-page workout tracker for a twice-a-week hiking strength program. Check off exercises as you go — progress is saved in your browser (localStorage), and every workout is logged to a history list by date.
+Simple, personalized workout tracker pages. Check off exercises as you go — progress is saved in your browser (localStorage), and every workout is logged to a history list by date. No build step, no dependencies.
 
-## The program
+## Pages
+
+Live at **https://katiesharp.github.io/workout-tracker/** — a landing page linking to each person's tracker:
+
+- **Katie** — https://katiesharp.github.io/workout-tracker/katie/ — Hiking Strength Program
+- **Elyse** — https://katiesharp.github.io/workout-tracker/elyse/ — personalized program coming soon (placeholder for now)
+
+Each page keeps its own history under its own localStorage key, so they never collide even on the same device.
+
+## Katie's program
 
 Two ~50–60 minute sessions per week:
 
@@ -11,11 +20,15 @@ Two ~50–60 minute sessions per week:
 
 Tap any exercise name to expand its description and progression tips.
 
-## Usage
+## Adding or editing a program
 
-Live at **https://katiesharp.github.io/workout-tracker/** — or open `index.html` in any browser. No build step, no dependencies.
+Each person's page is a self-contained `index.html` in their folder. Edit the `WORKOUTS` object near the top of the `<script>` block — each day has a `label` and a list of exercises with `name`, `scheme`, and `desc`.
 
-**On your phone:** open the link above, then use *Share → Add to Home Screen* (iPhone) or *menu → Add to Home screen* (Android). It installs like an app with its own icon and launches full-screen.
+To add a new person: copy an existing folder (e.g. `elyse/`), update the name in the page title/header/manifest, change `STORAGE_KEY` to something unique (e.g. `workout-log-sam-v1`), and add a link on the root `index.html`.
+
+## On your phone
+
+Open your page (not the landing page), then use *Share → Add to Home Screen* (iPhone) or *menu → Add to Home screen* (Android). It installs like an app with its own icon and launches full-screen straight to your tracker.
 
 Notes:
 - Check-off state is stored per date, so each day starts fresh automatically.
