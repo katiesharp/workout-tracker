@@ -87,17 +87,41 @@
     gap: 0.75rem;
     padding: 0.85rem 0.9rem;
   }
-  .exercise-row input[type="checkbox"] {
+  .done-dot {
     width: 1.5rem;
     height: 1.5rem;
-    accent-color: var(--accent);
-    flex-shrink: 0;
     cursor: pointer;
+    border-radius: 5px;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: #fff;
   }
+  .exercise.done .done-dot { background: var(--accent); border-color: var(--accent); }
   .exercise-info { flex: 1; cursor: pointer; }
+  .drag-handle {
+    color: var(--muted);
+    font-size: 1.15rem;
+    padding: 0.2rem 0.1rem;
+    cursor: grab;
+    touch-action: none;
+    flex-shrink: 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .exercise.dragging {
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    opacity: 0.95;
+  }
   .exercise-name { font-weight: 600; font-size: 0.95rem; }
   .exercise.done .exercise-name { text-decoration: line-through; color: var(--muted); }
   .exercise-scheme { font-size: 0.82rem; color: var(--muted); margin-top: 0.15rem; }
+  .time-edit { text-decoration: underline dotted; text-underline-offset: 2px; cursor: pointer; }
   .chevron { color: var(--muted); font-size: 0.8rem; transition: transform 0.2s; flex-shrink: 0; }
   .exercise.open .chevron { transform: rotate(90deg); }
   .exercise-desc {
@@ -108,6 +132,91 @@
     color: var(--muted);
   }
   .exercise.open .exercise-desc { display: block; }
+
+  .set-checks {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-shrink: 0;
+  }
+  .set-checks input[type="checkbox"] {
+    width: 1.45rem;
+    height: 1.45rem;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .adjust {
+    display: none;
+    padding: 0.2rem 0.9rem 0.9rem;
+  }
+  .exercise.open .adjust { display: block; }
+  .adjust-row {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0;
+    font-size: 0.85rem;
+  }
+  .adjust-row .a-label { width: 2.9rem; color: var(--muted); flex-shrink: 0; }
+  .adjust-row .a-value { min-width: 3.6rem; text-align: center; font-weight: 600; }
+  .adjust-row .a-value.unset { color: var(--muted); font-weight: 400; }
+  .stepper {
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--accent);
+    font-size: 1.1rem;
+    font-weight: 600;
+    flex-shrink: 0;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+  }
+  .adjust-sets {
+    margin-top: 0.4rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border);
+  }
+  .weight-input {
+    width: 4.2rem;
+    height: 2.1rem;
+    padding: 0 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    margin-left: 0.4rem;
+  }
+  .weight-unit { color: var(--muted); font-size: 0.82rem; }
+
+  .bottom-btns {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+  }
+  .bottom-btns button {
+    flex: 1;
+    padding: 0.85rem;
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--accent);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #finish-btn.finished,
+  #reorder-btn.reordering {
+    background: var(--accent);
+    color: #fff;
+  }
 
   .complete-banner {
     display: none;
@@ -149,6 +258,30 @@
   .badge.full { background: var(--accent); color: #fff; }
   .empty-history { color: var(--muted); font-size: 0.88rem; text-align: center; padding: 1rem 0; }
 
+  #session-notes {
+    width: 100%;
+    min-height: 5.5rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    resize: vertical;
+  }
+  #session-notes::placeholder { color: var(--muted); }
+  .h-notes {
+    flex-basis: 100%;
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin-top: 0.35rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+  }
+  .history-entry { flex-wrap: wrap; }
+
   footer {
     text-align: center;
     color: var(--muted);
@@ -177,7 +310,15 @@
 
 <div id="exercise-list"></div>
 
+<div class="bottom-btns">
+  <button id="finish-btn" onclick="toggleFinished()">Done for today</button>
+  <button id="reorder-btn" onclick="toggleReorder()">Reorder</button>
+</div>
+
 <div class="complete-banner" id="complete-banner">Workout complete! Nice work. 🎉</div>
+
+<h2 class="history-title">Session Notes</h2>
+<textarea id="session-notes" placeholder="How did it go? Weights used, what felt hard, anything to remember for next time…" oninput="saveNotes(this.value)"></textarea>
 
 <h2 class="history-title">History</h2>
 <div id="history"></div>
@@ -193,49 +334,120 @@ const WORKOUTS = {
   A: {
     label: "Day 1 — Strength + Climbing",
     exercises: [
-      { name: "Leg Press", scheme: "3 × 10–12 · ~8 min",
+      { name: "Leg Press", scheme: "3 × 10–12", est: 8, sets: 3, repsMin: 10, repsMax: 12,
         desc: "Sit in the leg press and push the platform away using both legs. Lower it under control until your knees are comfortably bent, then press back up. Don't lock your knees at the top." },
-      { name: "Dumbbell Step-Ups", scheme: "3 × 10–12 each leg · ~8 min",
+      { name: "Dumbbell Step-Ups", scheme: "3 × 10–12 each leg", est: 8, sets: 3, repsMin: 10, repsMax: 12,
         desc: "Stand in front of a low-to-moderate step while holding dumbbells. Place one foot on the step and push through that leg to bring your body up. Step back down and repeat. Try not to use your trailing leg to push yourself up. Progress: bodyweight → 5-lb dumbbells → 10 → 15 → etc." },
-      { name: "Single-Leg Elevated Hip Thrust + Band", scheme: "3 × 10–15 each leg · ~8 min",
+      { name: "Single-Leg Elevated Hip Thrust + Band", scheme: "3 × 10–15 each leg", est: 8, sets: 3, repsMin: 10, repsMax: 15,
         desc: "Place your working foot on a low block with the band around your thighs. Keep your upper back supported on the floor/bench. Drive through your working foot and squeeze your glute to raise your hips. Lower slowly. Progress: stronger band → more reps → harder variation." },
-      { name: "Step-Downs", scheme: "2 × 10–12 each leg · ~6 min",
+      { name: "Step-Downs", scheme: "2 × 10–12 each leg", est: 6, sets: 2, repsMin: 10, repsMax: 12,
         desc: "Stand on a low step on one leg. Slowly bend that leg and lower your opposite foot toward the floor until it lightly touches down, then push through the elevated leg to return to standing. Keep the movement controlled rather than dropping quickly. Progress: higher step → slower lowering → light dumbbells." },
-      { name: "Hip Abduction Machine", scheme: "2 × 15–20 · ~4 min",
+      { name: "Hip Abduction Machine", scheme: "2 × 15–20", est: 4, sets: 2, repsMin: 15, repsMax: 20,
         desc: "Sit in the machine with your legs together and push your knees outward against the pads. Return slowly rather than letting the weight pull your legs together." },
-      { name: "Incline Treadmill", scheme: "15 minutes",
+      { name: "Incline Treadmill", scheme: "", est: 15, timed: true,
         desc: "Walk at approximately 3 mph: 3% → 6% → 9% → 12% → 9% → 6% → 3%. You don't have to spend equal time at every incline. If you're short on time, 10 minutes is still worthwhile; if you're feeling good, go to 20. Progress speed over time: 3.0 → 3.1 → 3.2 → 3.3 mph." },
+      { name: "Hip Adduction Machine", scheme: "2 × 15–20", est: 4, sets: 2, repsMin: 15, repsMax: 20,
+        desc: "Sit in the machine with your legs apart and squeeze your knees together against the pads. Return slowly rather than letting the weight pull your legs back open. Works the inner thighs — the counterpart to the abduction machine." },
     ],
+    // Keep new exercises appended above (log data is keyed by position);
+    // defaultOrder controls where they show in the list.
+    defaultOrder: [0, 1, 2, 3, 4, 6, 5],
   },
   B: {
     label: "Day 2 — Strength + Endurance",
     exercises: [
-      { name: "Leg Press", scheme: "3 × 12–15 · ~8 min",
+      { name: "Leg Press", scheme: "3 × 12–15", est: 8, sets: 3, repsMin: 12, repsMax: 15,
         desc: "Same movement as Day 1, but use a slightly lighter weight so you can comfortably reach the higher rep range." },
-      { name: "Step-Downs", scheme: "3 × 12–15 each leg · ~8 min",
+      { name: "Step-Downs", scheme: "3 × 12–15 each leg", est: 8, sets: 3, repsMin: 12, repsMax: 15,
         desc: "Same controlled step-down as Day 1. Since this is particularly relevant to hiking, it gets a little more volume on this day." },
-      { name: "Dumbbell Step-Ups", scheme: "3 × 12–15 each leg · ~8 min",
+      { name: "Dumbbell Step-Ups", scheme: "3 × 12–15 each leg", est: 8, sets: 3, repsMin: 12, repsMax: 15,
         desc: "Same movement as Day 1. Use a weight that allows you to maintain control throughout every repetition." },
-      { name: "Single-Leg Elevated Hip Thrust + Band", scheme: "3 × 10–15 each leg · ~8 min",
+      { name: "Single-Leg Elevated Hip Thrust + Band", scheme: "3 × 10–15 each leg", est: 8, sets: 3, repsMin: 10, repsMax: 15,
         desc: "Same movement as Day 1. Focus on squeezing the glute rather than arching your lower back to get higher." },
-      { name: "Seated Leg Curl", scheme: "2 × 12–15 · ~5 min",
+      { name: "Seated Leg Curl", scheme: "2 × 12–15", est: 5, sets: 2, repsMin: 12, repsMax: 15,
         desc: "Sit in the leg curl machine and pull the padded lever downward/back using your hamstrings. Return slowly to the starting position." },
-      { name: "Incline Treadmill", scheme: "15 minutes",
+      { name: "Incline Treadmill", scheme: "", est: 15, timed: true,
         desc: "Can be somewhat easier than your harder treadmill workout — aim to accumulate time walking uphill rather than maxing out your heart rate. 10 minutes still counts on a long day; 20 if you're feeling good." },
     ],
   },
 };
 
-const STORAGE_KEY = "workout-log-v1";
+const STORAGE_KEY = "workout-log-v4";
+const V3_STORAGE_KEY = "workout-log-v3";
+const OLD_STORAGE_KEY = "workout-log-v1";
 
 function todayKey() {
   const d = new Date();
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
 
+// v4 shape: log[date] = { days: { A: { exerciseIndex: [{done, reps}, ...] }, B: {...} },
+//                         notes: { A: "..." }, finished: { A: true } }
+// Both days can hold progress on the same date. Checking a set (done) and its
+// rep count (reps) are independent; reps defaults to the exercise's target.
 function loadLog() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  try {
+    const v4 = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (v4) return normalizeLog(v4);
+  } catch {}
+  const migrated = normalizeLog(migrateV3() || migrateV1());
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+  return migrated;
+}
+
+// Heal any slots saved by older versions of the page (numbers/true/null)
+// into the current {done, reps, weight} shape.
+function normalizeLog(log) {
+  for (const entry of Object.values(log)) {
+    for (const daySets of Object.values(entry.days || {})) {
+      for (const exIdx of Object.keys(daySets)) {
+        daySets[exIdx] = daySets[exIdx].map(s =>
+          (s && typeof s === "object")
+            ? { done: !!s.done, reps: s.reps ?? null, weight: s.weight ?? null, mins: s.mins ?? null, incline: s.incline ?? null }
+            : { done: s != null, reps: (typeof s === "number") ? s : null, weight: null, mins: null, incline: null }
+        );
+      }
+    }
+  }
+  return log;
+}
+
+function migrateV3() {
+  let v3;
+  try { v3 = JSON.parse(localStorage.getItem(V3_STORAGE_KEY)); }
+  catch { return null; }
+  if (!v3) return null;
+  for (const entry of Object.values(v3)) {
+    for (const daySets of Object.values(entry.days || {})) {
+      for (const exIdx of Object.keys(daySets)) {
+        daySets[exIdx] = daySets[exIdx].map(v => ({
+          done: v != null,
+          reps: (typeof v === "number") ? v : null,
+          weight: null,
+        }));
+      }
+    }
+  }
+  return v3;
+}
+
+function migrateV1() {
+  let v1;
+  try { v1 = JSON.parse(localStorage.getItem(OLD_STORAGE_KEY)) || {}; }
   catch { return {}; }
+  const out = {};
+  for (const date of Object.keys(v1)) {
+    const entry = v1[date];
+    if (!entry || !WORKOUTS[entry.day]) continue;
+    const sets = {};
+    WORKOUTS[entry.day].exercises.forEach((ex, i) => {
+      if (entry.checked && entry.checked[i]) {
+        sets[i] = Array.from({ length: ex.timed ? 1 : ex.sets }, () => ({ done: true, reps: null, weight: null }));
+      }
+    });
+    out[date] = { days: { [entry.day]: sets } };
+  }
+  return out;
 }
 
 function saveLog(log) {
@@ -243,28 +455,266 @@ function saveLog(log) {
 }
 
 let log = loadLog();
-let currentDay = (log[todayKey()] && log[todayKey()].day) || "A";
+let currentDay = "A";
+{
+  const t = log[todayKey()];
+  if (t && t.days && !daySetsHaveProgress(t.days.A) && daySetsHaveProgress(t.days.B)) currentDay = "B";
+}
 const openDescs = new Set();
 
+function daySetsHaveProgress(daySets) {
+  return Object.values(daySets || {}).some(arr => arr.some(s => s && s.done));
+}
+
+function exerciseDone(ex, setsArr) {
+  if (!setsArr || setsArr.length === 0) return false;
+  return setsArr.every(s => s && s.done);
+}
+
+function countDone(day, entrySets) {
+  return WORKOUTS[day].exercises.filter((ex, i) => exerciseDone(ex, entrySets[i])).length;
+}
+
 function selectDay(day) {
-  const entry = log[todayKey()];
-  if (entry && entry.day !== day && Object.values(entry.checked).some(Boolean)) {
-    if (!confirm("You already checked off exercises for " + WORKOUTS[entry.day].label + " today. Switch days and clear today's checks?")) return;
-    delete log[todayKey()];
-    saveLog(log);
-  }
   currentDay = day;
   render();
 }
 
-function toggleCheck(index) {
+function todayEntry() {
   const key = todayKey();
-  if (!log[key] || log[key].day !== currentDay) {
-    log[key] = { day: currentDay, checked: {} };
+  if (!log[key]) log[key] = { days: {} };
+  if (!log[key].days[currentDay]) log[key].days[currentDay] = {};
+  return log[key];
+}
+
+const WEIGHTS_KEY = "workout-weights-v1";
+const INCLINES_KEY = "workout-inclines-v1";
+
+function loadMap(key) {
+  try { return JSON.parse(localStorage.getItem(key)) || {}; }
+  catch { return {}; }
+}
+
+const lastWeights = loadMap(WEIGHTS_KEY);
+const lastInclines = loadMap(INCLINES_KEY);
+
+const TIMES_KEY = "workout-times-v1";
+const lastTimes = loadMap(TIMES_KEY);
+
+// Keyed by day + exercise position so exercises sharing a name across days
+// (with different durations) stay independent.
+function getEst(day, exIndex) {
+  const stored = lastTimes[day + ":" + exIndex];
+  return (typeof stored === "number") ? stored : WORKOUTS[day].exercises[exIndex].est;
+}
+
+function editTime(exIndex) {
+  const current = getEst(currentDay, exIndex);
+  const answer = prompt("Minutes to complete " + WORKOUTS[currentDay].exercises[exIndex].name + ":", current);
+  if (answer === null) return;
+  const num = parseFloat(answer);
+  if (isNaN(num) || num <= 0) return;
+  lastTimes[currentDay + ":" + exIndex] = num;
+  localStorage.setItem(TIMES_KEY, JSON.stringify(lastTimes));
+  render();
+}
+
+const ORDER_KEY = "workout-order-v1";
+const savedOrder = loadMap(ORDER_KEY);
+
+function getOrder(day) {
+  const n = WORKOUTS[day].exercises.length;
+  const stored = savedOrder[day];
+  if (Array.isArray(stored) && stored.length === n &&
+      [...stored].sort((a, b) => a - b).every((v, i) => v === i)) {
+    return stored;
   }
-  log[key].checked[index] = !log[key].checked[index];
+  savedOrder[day] = WORKOUTS[day].defaultOrder
+    ? [...WORKOUTS[day].defaultOrder]
+    : Array.from({ length: n }, (_, i) => i);
+  return savedOrder[day];
+}
+
+function saveOrder() {
+  localStorage.setItem(ORDER_KEY, JSON.stringify(savedOrder));
+}
+
+let reorderMode = false;
+
+function toggleReorder() {
+  reorderMode = !reorderMode;
+  render();
+}
+
+let drag = null;
+
+function startDrag(e, pos) {
+  e.preventDefault();
+  const list = document.getElementById("exercise-list");
+  drag = { pos, el: list.children[pos], startY: e.clientY, list };
+  drag.el.classList.add("dragging");
+  document.addEventListener("pointermove", onDragMove);
+  document.addEventListener("pointerup", endDrag);
+  document.addEventListener("pointercancel", endDrag);
+}
+
+function onDragMove(e) {
+  if (!drag) return;
+  const dy = e.clientY - drag.startY;
+  drag.el.style.transform = "translateY(" + dy + "px)";
+  const cards = [...drag.list.children];
+  const rect = drag.el.getBoundingClientRect();
+  const centerY = rect.top + rect.height / 2;
+  let newPos = drag.pos;
+  cards.forEach((c, idx) => {
+    if (c === drag.el) return;
+    const r = c.getBoundingClientRect();
+    const mid = r.top + r.height / 2;
+    if (idx < drag.pos && centerY < mid) newPos = Math.min(newPos, idx);
+    if (idx > drag.pos && centerY > mid) newPos = Math.max(newPos, idx);
+  });
+  if (newPos !== drag.pos) {
+    const order = getOrder(currentDay);
+    const [moved] = order.splice(drag.pos, 1);
+    order.splice(newPos, 0, moved);
+    saveOrder();
+    const others = cards.filter(c => c !== drag.el);
+    if (newPos >= others.length) drag.list.appendChild(drag.el);
+    else drag.list.insertBefore(drag.el, others[newPos]);
+    drag.pos = newPos;
+    drag.startY = e.clientY;
+    drag.el.style.transform = "";
+  }
+}
+
+function endDrag() {
+  if (!drag) return;
+  drag.el.classList.remove("dragging");
+  drag.el.style.transform = "";
+  drag = null;
+  document.removeEventListener("pointermove", onDragMove);
+  document.removeEventListener("pointerup", endDrag);
+  document.removeEventListener("pointercancel", endDrag);
+  render();
+}
+
+function newSlot(ex) {
+  if (ex.timed) {
+    const incline = lastInclines[ex.name];
+    return { done: false, reps: null, weight: null, mins: 15, incline: (typeof incline === "number") ? incline : null };
+  }
+  const remembered = lastWeights[ex.name];
+  return {
+    done: false,
+    reps: ex.repsMin,
+    weight: (typeof remembered === "number") ? remembered : null,
+  };
+}
+
+function getSetsArr(entry, exIndex) {
+  const ex = WORKOUTS[currentDay].exercises[exIndex];
+  const daySets = entry.days[currentDay];
+  if (!daySets[exIndex]) {
+    daySets[exIndex] = Array.from({ length: ex.timed ? 1 : ex.sets }, () => newSlot(ex));
+  }
+  return daySets[exIndex];
+}
+
+function toggleExercise(exIndex) {
+  const entry = todayEntry();
+  const arr = getSetsArr(entry, exIndex);
+  const allDone = arr.every(s => s.done);
+  arr.forEach(s => { s.done = !allDone; });
   saveLog(log);
   render();
+}
+
+function toggleSet(exIndex, setIndex) {
+  const entry = todayEntry();
+  const arr = getSetsArr(entry, exIndex);
+  arr[setIndex].done = !arr[setIndex].done;
+  saveLog(log);
+  render();
+}
+
+// Called on input; saves without re-rendering so the keyboard stays open.
+function setReps(exIndex, setIndex, value) {
+  const entry = todayEntry();
+  const arr = getSetsArr(entry, exIndex);
+  const num = parseInt(value, 10);
+  arr[setIndex].reps = isNaN(num) ? null : num;
+  saveLog(log);
+}
+
+// Called on input; saves without re-rendering so the keyboard stays open.
+function setWeight(exIndex, setIndex, value) {
+  const ex = WORKOUTS[currentDay].exercises[exIndex];
+  const entry = todayEntry();
+  const arr = getSetsArr(entry, exIndex);
+  const num = parseFloat(value);
+  arr[setIndex].weight = isNaN(num) ? null : num;
+  saveLog(log);
+  if (!isNaN(num)) {
+    lastWeights[ex.name] = num;
+    localStorage.setItem(WEIGHTS_KEY, JSON.stringify(lastWeights));
+  }
+}
+
+function changeSetCount(exIndex, delta) {
+  const ex = WORKOUTS[currentDay].exercises[exIndex];
+  const entry = todayEntry();
+  const arr = getSetsArr(entry, exIndex);
+  if (delta > 0) arr.push(newSlot(ex));
+  else if (arr.length > 1) arr.pop();
+  saveLog(log);
+  render();
+}
+
+// Called on input; save without re-rendering so the keyboard stays open.
+function setMins(exIndex, value) {
+  const entry = todayEntry();
+  const arr = getSetsArr(entry, exIndex);
+  const num = parseFloat(value);
+  arr[0].mins = isNaN(num) ? null : num;
+  saveLog(log);
+}
+
+function setIncline(exIndex, value) {
+  const ex = WORKOUTS[currentDay].exercises[exIndex];
+  const entry = todayEntry();
+  const arr = getSetsArr(entry, exIndex);
+  const num = parseFloat(value);
+  arr[0].incline = isNaN(num) ? null : num;
+  saveLog(log);
+  if (!isNaN(num)) {
+    lastInclines[ex.name] = num;
+    localStorage.setItem(INCLINES_KEY, JSON.stringify(lastInclines));
+  }
+}
+
+function toggleTimed(exIndex) {
+  const entry = todayEntry();
+  const arr = getSetsArr(entry, exIndex);
+  arr[0].done = !arr[0].done;
+  saveLog(log);
+  render();
+}
+
+function toggleFinished() {
+  const entry = todayEntry();
+  if (!entry.finished) entry.finished = {};
+  entry.finished[currentDay] = !entry.finished[currentDay];
+  saveLog(log);
+  render();
+}
+
+function saveNotes(text) {
+  const entry = todayEntry();
+  if (!entry.notes) entry.notes = {};
+  if (text.trim() === "") delete entry.notes[currentDay];
+  else entry.notes[currentDay] = text;
+  saveLog(log);
+  renderHistory();
 }
 
 function toggleDesc(index) {
@@ -275,7 +725,7 @@ function toggleDesc(index) {
 function render() {
   const key = todayKey();
   const workout = WORKOUTS[currentDay];
-  const checked = (log[key] && log[key].day === currentDay) ? log[key].checked : {};
+  const entrySets = (log[key] && log[key].days && log[key].days[currentDay]) || {};
 
   document.getElementById("today-date").textContent =
     new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
@@ -283,53 +733,142 @@ function render() {
   document.getElementById("tab-A").classList.toggle("active", currentDay === "A");
   document.getElementById("tab-B").classList.toggle("active", currentDay === "B");
 
-  const doneCount = workout.exercises.filter((_, i) => checked[i]).length;
+  const doneCount = countDone(currentDay, entrySets);
   const total = workout.exercises.length;
+  const finished = !!(log[key] && log[key].finished && log[key].finished[currentDay]);
   document.getElementById("progress-text").textContent = doneCount + " of " + total + " done";
   document.getElementById("progress-fill").style.width = (doneCount / total * 100) + "%";
-  document.getElementById("complete-banner").classList.toggle("show", doneCount === total);
+  document.getElementById("complete-banner").classList.toggle("show", finished || doneCount === total);
+
+  const finishBtn = document.getElementById("finish-btn");
+  finishBtn.classList.toggle("finished", finished);
+  finishBtn.textContent = finished ? "Done ✓ — tap to undo" : "Done for today";
+
+  const reorderBtn = document.getElementById("reorder-btn");
+  reorderBtn.classList.toggle("reordering", reorderMode);
+  reorderBtn.textContent = reorderMode ? "Finish reordering" : "Reorder";
 
   const list = document.getElementById("exercise-list");
   list.innerHTML = "";
-  workout.exercises.forEach((ex, i) => {
+  getOrder(currentDay).forEach((i, pos) => {
+    const ex = workout.exercises[i];
+    const setsArr = entrySets[i] || [];
+    const isDone = exerciseDone(ex, setsArr);
     const div = document.createElement("div");
-    div.className = "exercise" + (checked[i] ? " done" : "") + (openDescs.has(i) ? " open" : "");
+    div.className = "exercise" + (isDone ? " done" : "") + (openDescs.has(i) ? " open" : "");
+
+    const rowLead = '<div class="done-dot" onclick="toggleExercise(' + i + ')" title="Mark all sets done">' + (isDone ? "✓" : "") + "</div>";
+
+    let checksHtml = "";
+    let adjustHtml = "";
+    if (ex.timed) {
+      checksHtml =
+        '<div class="set-checks">' +
+          '<input type="checkbox" ' + (setsArr[0] && setsArr[0].done ? "checked" : "") + ' onchange="toggleTimed(' + i + ')">' +
+        "</div>";
+      const slot = setsArr[0] || {};
+      const minsVal = (typeof slot.mins === "number") ? slot.mins : 15;
+      const inclineRemembered = lastInclines[ex.name];
+      const inclineVal = (typeof slot.incline === "number") ? slot.incline
+        : (typeof inclineRemembered === "number") ? inclineRemembered : 0;
+      adjustHtml =
+        '<div class="adjust"><div class="adjust-row">' +
+          '<input class="weight-input" type="number" inputmode="decimal" min="0" step="any" value="' + minsVal + '" oninput="setMins(' + i + ',this.value)">' +
+          '<span class="weight-unit">min</span>' +
+          '<input class="weight-input" type="number" inputmode="decimal" min="0" step="any" placeholder="%" value="' + inclineVal + '" oninput="setIncline(' + i + ',this.value)">' +
+          '<span class="weight-unit">% incline</span>' +
+        "</div></div>";
+    } else {
+      const slots = setsArr.length ? setsArr : Array.from({ length: ex.sets }, () => ({ done: false, reps: null, weight: null }));
+      checksHtml = '<div class="set-checks">';
+      slots.forEach((slot, s) => {
+        checksHtml += '<input type="checkbox" ' + (slot.done ? "checked" : "") + ' onchange="toggleSet(' + i + "," + s + ')">';
+      });
+      checksHtml += "</div>";
+
+      adjustHtml = '<div class="adjust">';
+      slots.forEach((slot, s) => {
+        const repsVal = (typeof slot.reps === "number") ? slot.reps : ex.repsMin;
+        const remembered = lastWeights[ex.name];
+        const weightVal = (typeof slot.weight === "number") ? slot.weight
+          : (typeof remembered === "number") ? remembered : 0;
+        adjustHtml +=
+          '<div class="adjust-row">' +
+            '<span class="a-label">Set ' + (s + 1) + "</span>" +
+            '<input class="weight-input" type="number" inputmode="numeric" min="0" placeholder="reps" value="' + repsVal + '" oninput="setReps(' + i + "," + s + ',this.value)">' +
+            '<span class="weight-unit">reps</span>' +
+            '<input class="weight-input" type="number" inputmode="decimal" min="0" step="any" placeholder="lb" value="' + weightVal + '" oninput="setWeight(' + i + "," + s + ',this.value)">' +
+            '<span class="weight-unit">lb</span>' +
+          "</div>";
+      });
+      adjustHtml +=
+        '<div class="adjust-row adjust-sets">' +
+          '<span class="a-label">Sets</span>' +
+          '<button class="stepper" onclick="changeSetCount(' + i + ',-1)">−</button>' +
+          '<span class="a-value">' + slots.length + "</span>" +
+          '<button class="stepper" onclick="changeSetCount(' + i + ',1)">+</button>' +
+        "</div>" +
+      "</div>";
+    }
+
     div.innerHTML =
       '<div class="exercise-row">' +
-        '<input type="checkbox" ' + (checked[i] ? "checked" : "") + ' onchange="toggleCheck(' + i + ')">' +
+        (reorderMode ? '<span class="drag-handle" onpointerdown="startDrag(event,' + pos + ')">≡</span>' : "") +
+        rowLead +
         '<div class="exercise-info" onclick="toggleDesc(' + i + ')">' +
-          '<div class="exercise-name">' + (i + 1) + ". " + ex.name + "</div>" +
-          '<div class="exercise-scheme">' + ex.scheme + "</div>" +
+          '<div class="exercise-name">' + (pos + 1) + ". " + ex.name + "</div>" +
+          '<div class="exercise-scheme">' + ex.scheme + (ex.scheme ? " · " : "") +
+            '<span class="time-edit" onclick="event.stopPropagation(); editTime(' + i + ')">~' + getEst(currentDay, i) + " min</span></div>" +
         "</div>" +
+        checksHtml +
         '<span class="chevron" onclick="toggleDesc(' + i + ')">▶</span>' +
       "</div>" +
-      '<div class="exercise-desc">' + ex.desc + "</div>";
+      '<div class="exercise-desc">' + ex.desc + "</div>" +
+      adjustHtml;
     list.appendChild(div);
   });
 
+  const notesBox = document.getElementById("session-notes");
+  const entry = log[key];
+  notesBox.value = (entry && entry.notes && entry.notes[currentDay]) || "";
+
   renderHistory();
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function renderHistory() {
   const container = document.getElementById("history");
   container.innerHTML = "";
   const dates = Object.keys(log).sort().reverse();
-  const past = dates.filter(d => Object.values(log[d].checked).some(Boolean));
-  if (past.length === 0) {
-    container.innerHTML = '<div class="empty-history">No workouts logged yet. Check off your first exercise above!</div>';
+  const rows = [];
+  dates.forEach(d => {
+    const entry = log[d];
+    ["A", "B"].forEach(day => {
+      const daySets = entry.days && entry.days[day];
+      const notes = entry.notes && entry.notes[day];
+      const finished = !!(entry.finished && entry.finished[day]);
+      if (daySetsHaveProgress(daySets) || notes || finished) rows.push({ d, day, daySets: daySets || {}, notes, finished });
+    });
+  });
+  if (rows.length === 0) {
+    container.innerHTML = '<div class="empty-history">No workouts logged yet. Tap the reps you did on your first set above!</div>';
     return;
   }
-  past.forEach(d => {
-    const entry = log[d];
-    const total = WORKOUTS[entry.day].exercises.length;
-    const done = Object.values(entry.checked).filter(Boolean).length;
+  rows.forEach(({ d, day, daySets, notes, finished }) => {
+    const total = WORKOUTS[day].exercises.length;
+    const done = countDone(day, daySets);
+    const isFull = finished || done === total;
     const div = document.createElement("div");
     div.className = "history-entry";
     const dateLabel = new Date(d + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
     div.innerHTML =
       '<span class="h-date">' + dateLabel + "</span>" +
-      '<span class="h-day">' + WORKOUTS[entry.day].label + "</span>" +
-      '<span class="badge' + (done === total ? " full" : "") + '">' + done + "/" + total + "</span>";
+      '<span class="h-day">' + WORKOUTS[day].label + "</span>" +
+      '<span class="badge' + (isFull ? " full" : "") + '">' + (isFull ? "✓ " : "") + done + "/" + total + "</span>" +
+      (notes ? '<div class="h-notes">📝 ' + escapeHtml(notes) + "</div>" : "");
     container.appendChild(div);
   });
 }
