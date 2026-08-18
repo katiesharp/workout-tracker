@@ -212,10 +212,26 @@
     font-weight: 600;
     cursor: pointer;
   }
-  #finish-btn.finished,
   #reorder-btn.reordering {
     background: var(--accent);
     color: #fff;
+  }
+  .finish-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    margin-top: 0.6rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .finish-row input {
+    width: 1.35rem;
+    height: 1.35rem;
+    accent-color: var(--accent);
+    cursor: pointer;
   }
 
   .complete-banner {
@@ -280,7 +296,26 @@
     line-height: 1.4;
     white-space: pre-wrap;
   }
-  .history-entry { flex-wrap: wrap; }
+  .history-entry { flex-wrap: wrap; cursor: pointer; }
+  .h-chev {
+    color: var(--muted);
+    font-size: 0.7rem;
+    margin-left: 0.5rem;
+    transition: transform 0.2s;
+  }
+  .history-entry.open .h-chev { transform: rotate(90deg); }
+  .h-details {
+    flex-basis: 100%;
+    display: none;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border);
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .history-entry.open .h-details { display: block; }
+  .h-details .h-ex-name { color: var(--text); font-weight: 600; }
 
   footer {
     text-align: center;
@@ -306,12 +341,13 @@
 <div class="progress">
   <span id="progress-text"></span>
   <div class="bar"><div class="fill" id="progress-fill"></div></div>
+  <label class="finish-row"><input type="checkbox" id="finish-check" onchange="toggleFinished()"> Done for today</label>
 </div>
 
 <div id="exercise-list"></div>
 
 <div class="bottom-btns">
-  <button id="finish-btn" onclick="toggleFinished()">Done for today</button>
+  <button id="checkall-btn" onclick="checkAll()">Check all</button>
   <button id="reorder-btn" onclick="toggleReorder()">Reorder</button>
 </div>
 
@@ -473,6 +509,41 @@ function exerciseDone(ex, setsArr) {
 
 function countDone(day, entrySets) {
   return WORKOUTS[day].exercises.filter((ex, i) => exerciseDone(ex, entrySets[i])).length;
+}
+
+const TAB_LABELS = { A: "Day 1 — Climbing", B: "Day 2 — Endurance" };
+const CYCLE_DAYS = 7;
+
+function dayCompletedOn(entry, day) {
+  if (entry.finished && entry.finished[day]) return true;
+  const daySets = entry.days && entry.days[day];
+  return !!daySets && countDone(day, daySets) === WORKOUTS[day].exercises.length;
+}
+
+function addDaysKey(dateKey, days) {
+  const d = new Date(dateKey + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+// Cycles start at the first completed workout and run CYCLE_DAYS; a
+// completion after a cycle ends starts the next one. Returns the set of
+// workout keys completed in the cycle that includes today (empty if the
+// last cycle has already ended).
+function currentCycleCompletions() {
+  let cycleEnd = null;
+  let completed = new Set();
+  for (const dateKey of Object.keys(log).sort()) {
+    const entry = log[dateKey];
+    const doneToday = Object.keys(WORKOUTS).filter(day => dayCompletedOn(entry, day));
+    if (doneToday.length === 0) continue;
+    if (!cycleEnd || dateKey > cycleEnd) {
+      cycleEnd = addDaysKey(dateKey, CYCLE_DAYS - 1);
+      completed = new Set();
+    }
+    doneToday.forEach(day => completed.add(day));
+  }
+  return (cycleEnd && todayKey() <= cycleEnd) ? completed : new Set();
 }
 
 function selectDay(day) {
@@ -708,6 +779,15 @@ function toggleFinished() {
   render();
 }
 
+function checkAll() {
+  const entry = todayEntry();
+  const arrs = WORKOUTS[currentDay].exercises.map((ex, i) => getSetsArr(entry, i));
+  const allDone = arrs.every(a => a.every(s => s.done));
+  arrs.forEach(a => a.forEach(s => { s.done = !allDone; }));
+  saveLog(log);
+  render();
+}
+
 function saveNotes(text) {
   const entry = todayEntry();
   if (!entry.notes) entry.notes = {};
@@ -730,8 +810,12 @@ function render() {
   document.getElementById("today-date").textContent =
     new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
-  document.getElementById("tab-A").classList.toggle("active", currentDay === "A");
-  document.getElementById("tab-B").classList.toggle("active", currentDay === "B");
+  const cycleDone = currentCycleCompletions();
+  ["A", "B"].forEach(d => {
+    const btn = document.getElementById("tab-" + d);
+    btn.classList.toggle("active", currentDay === d);
+    btn.textContent = TAB_LABELS[d] + (cycleDone.has(d) ? " ✓" : "");
+  });
 
   const doneCount = countDone(currentDay, entrySets);
   const total = workout.exercises.length;
@@ -740,9 +824,8 @@ function render() {
   document.getElementById("progress-fill").style.width = (doneCount / total * 100) + "%";
   document.getElementById("complete-banner").classList.toggle("show", finished || doneCount === total);
 
-  const finishBtn = document.getElementById("finish-btn");
-  finishBtn.classList.toggle("finished", finished);
-  finishBtn.textContent = finished ? "Done ✓ — tap to undo" : "Done for today";
+  document.getElementById("finish-check").checked = finished;
+  document.getElementById("checkall-btn").textContent = (doneCount === total) ? "Uncheck all" : "Check all";
 
   const reorderBtn = document.getElementById("reorder-btn");
   reorderBtn.classList.toggle("reordering", reorderMode);
@@ -835,6 +918,34 @@ function render() {
   renderHistory();
 }
 
+const openHistory = new Set();
+
+function toggleHistory(id) {
+  if (openHistory.has(id)) openHistory.delete(id); else openHistory.add(id);
+  renderHistory();
+}
+
+// One-line stats for an exercise's completed sets. Uniform sets collapse to
+// "N × reps · weight"; mixed sets are listed individually.
+function setSummary(ex, arr) {
+  const done = (arr || []).filter(s => s && s.done);
+  if (done.length === 0) return null;
+  if (ex.timed) {
+    const s = done[0];
+    let t = ((typeof s.mins === "number") ? s.mins : ex.est) + " min";
+    if (typeof s.incline === "number") t += " · " + s.incline + "% incline";
+    return t;
+  }
+  const parts = done.map(s => ({
+    r: (typeof s.reps === "number") ? s.reps : "—",
+    w: (typeof s.weight === "number") ? s.weight + " lb" : null,
+  }));
+  const uniform = parts.every(p => p.r === parts[0].r && p.w === parts[0].w);
+  const one = p => p.r + " reps" + (p.w ? " · " + p.w : "");
+  if (uniform) return done.length + " × " + one(parts[0]);
+  return parts.map(one).join("  /  ");
+}
+
 function escapeHtml(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -861,14 +972,21 @@ function renderHistory() {
     const total = WORKOUTS[day].exercises.length;
     const done = countDone(day, daySets);
     const isFull = finished || done === total;
+    const id = d + "|" + day;
     const div = document.createElement("div");
-    div.className = "history-entry";
+    div.className = "history-entry" + (openHistory.has(id) ? " open" : "");
+    div.onclick = () => toggleHistory(id);
     const dateLabel = new Date(d + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    const details = WORKOUTS[day].exercises.map((ex, i) => {
+      const summary = setSummary(ex, daySets[i]);
+      return summary ? '<div><span class="h-ex-name">' + ex.name + "</span> — " + summary + "</div>" : "";
+    }).join("");
     div.innerHTML =
       '<span class="h-date">' + dateLabel + "</span>" +
-      '<span class="h-day">' + WORKOUTS[day].label + "</span>" +
+      '<span class="h-day">' + WORKOUTS[day].label + '<span class="h-chev">▶</span></span>' +
       '<span class="badge' + (isFull ? " full" : "") + '">' + (isFull ? "✓ " : "") + done + "/" + total + "</span>" +
-      (notes ? '<div class="h-notes">📝 ' + escapeHtml(notes) + "</div>" : "");
+      (notes ? '<div class="h-notes">📝 ' + escapeHtml(notes) + "</div>" : "") +
+      '<div class="h-details">' + (details || "No sets logged.") + "</div>";
     container.appendChild(div);
   });
 }
