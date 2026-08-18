@@ -599,6 +599,22 @@ function loadMap(key) {
 const lastWeights = loadMap(WEIGHTS_KEY);
 const lastInclines = loadMap(INCLINES_KEY);
 
+const REPS_KEY = "elyse-workout-reps-v1";
+const MINS_KEY = "elyse-workout-mins-v1";
+const SETS_KEY = "elyse-workout-sets-v1";
+const lastReps = loadMap(REPS_KEY);
+const lastMins = loadMap(MINS_KEY);
+const lastSets = loadMap(SETS_KEY);
+
+// Remembered values are per day + exercise, since the same exercise can
+// have different targets on different days.
+function exKey(ex) { return currentDay + ":" + ex.name; }
+
+function setCount(ex) {
+  const n = lastSets[exKey(ex)];
+  return (typeof n === "number" && n >= 1) ? n : ex.sets;
+}
+
 const TIMES_KEY = "elyse-workout-times-v1";
 const lastTimes = loadMap(TIMES_KEY);
 
@@ -702,12 +718,14 @@ function endDrag() {
 function newSlot(ex) {
   if (ex.timed) {
     const incline = lastInclines[ex.name];
-    return { done: false, reps: null, weight: null, mins: ex.est, incline: (typeof incline === "number") ? incline : null };
+    const mins = lastMins[exKey(ex)];
+    return { done: false, reps: null, weight: null, mins: (typeof mins === "number") ? mins : ex.est, incline: (typeof incline === "number") ? incline : null };
   }
   const remembered = lastWeights[ex.name];
+  const reps = lastReps[exKey(ex)];
   return {
     done: false,
-    reps: ex.repsMin,
+    reps: (typeof reps === "number") ? reps : ex.repsMin,
     weight: (typeof remembered === "number") ? remembered : null,
   };
 }
@@ -716,7 +734,7 @@ function getSetsArr(entry, exIndex) {
   const ex = WORKOUTS[currentDay].exercises[exIndex];
   const daySets = entry.days[currentDay];
   if (!daySets[exIndex]) {
-    daySets[exIndex] = Array.from({ length: ex.timed ? 1 : ex.sets }, () => newSlot(ex));
+    daySets[exIndex] = Array.from({ length: ex.timed ? 1 : setCount(ex) }, () => newSlot(ex));
   }
   return daySets[exIndex];
 }
@@ -740,11 +758,16 @@ function toggleSet(exIndex, setIndex) {
 
 // Called on input; saves without re-rendering so the keyboard stays open.
 function setReps(exIndex, setIndex, value) {
+  const ex = WORKOUTS[currentDay].exercises[exIndex];
   const entry = todayEntry();
   const arr = getSetsArr(entry, exIndex);
   const num = parseInt(value, 10);
   arr[setIndex].reps = isNaN(num) ? null : num;
   saveLog(log);
+  if (!isNaN(num)) {
+    lastReps[exKey(ex)] = num;
+    localStorage.setItem(REPS_KEY, JSON.stringify(lastReps));
+  }
 }
 
 // Called on input; saves without re-rendering so the keyboard stays open.
@@ -767,17 +790,24 @@ function changeSetCount(exIndex, delta) {
   const arr = getSetsArr(entry, exIndex);
   if (delta > 0) arr.push(newSlot(ex));
   else if (arr.length > 1) arr.pop();
+  lastSets[exKey(ex)] = arr.length;
+  localStorage.setItem(SETS_KEY, JSON.stringify(lastSets));
   saveLog(log);
   render();
 }
 
 // Called on input; save without re-rendering so the keyboard stays open.
 function setMins(exIndex, value) {
+  const ex = WORKOUTS[currentDay].exercises[exIndex];
   const entry = todayEntry();
   const arr = getSetsArr(entry, exIndex);
   const num = parseFloat(value);
   arr[0].mins = isNaN(num) ? null : num;
   saveLog(log);
+  if (!isNaN(num)) {
+    lastMins[exKey(ex)] = num;
+    localStorage.setItem(MINS_KEY, JSON.stringify(lastMins));
+  }
 }
 
 function setIncline(exIndex, value) {
@@ -880,7 +910,7 @@ function render() {
           '<input type="checkbox" ' + (setsArr[0] && setsArr[0].done ? "checked" : "") + ' onchange="toggleTimed(' + i + ')">' +
         "</div>";
       const slot = setsArr[0] || {};
-      const minsVal = (typeof slot.mins === "number") ? slot.mins : ex.est;
+      const minsVal = (typeof slot.mins === "number") ? slot.mins : ((typeof lastMins[exKey(ex)] === "number") ? lastMins[exKey(ex)] : ex.est);
       const inclineRemembered = lastInclines[ex.name];
       const inclineVal = (typeof slot.incline === "number") ? slot.incline
         : (typeof inclineRemembered === "number") ? inclineRemembered : 0;
@@ -894,7 +924,7 @@ function render() {
             : "") +
         "</div></div>";
     } else {
-      const slots = setsArr.length ? setsArr : Array.from({ length: ex.sets }, () => ({ done: false, reps: null, weight: null }));
+      const slots = setsArr.length ? setsArr : Array.from({ length: setCount(ex) }, () => newSlot(ex));
       checksHtml = '<div class="set-checks">';
       slots.forEach((slot, s) => {
         checksHtml += '<input type="checkbox" ' + (slot.done ? "checked" : "") + ' onchange="toggleSet(' + i + "," + s + ')">';
@@ -903,7 +933,7 @@ function render() {
 
       adjustHtml = '<div class="adjust">';
       slots.forEach((slot, s) => {
-        const repsVal = (typeof slot.reps === "number") ? slot.reps : ex.repsMin;
+        const repsVal = (typeof slot.reps === "number") ? slot.reps : ((typeof lastReps[exKey(ex)] === "number") ? lastReps[exKey(ex)] : ex.repsMin);
         const remembered = lastWeights[ex.name];
         const weightVal = (typeof slot.weight === "number") ? slot.weight
           : (typeof remembered === "number") ? remembered : 0;
